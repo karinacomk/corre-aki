@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest';
+import { races, distancePrice, isSoldOut, deliveryFee, couponDiscount, refundRate, canChangeAddress, earnedPoints, kitDeadline } from '@/features/correaki/data';
+const flowers=races.find(r=>r.id==='1');
+if(!flowers)throw new Error('Missing Corrida das Flores');
+describe('CorreAki business rules',()=>{
+ it('contains all 12 races with dates in the next six months',()=>{expect(races).toHaveLength(12);expect(races.every(r=>r.date>'2026-11-21'&&r.date<='2027-05-21')).toBe(true);});
+ it('prices the shortest Flores race at R$89 and adds R$30 for 10km',()=>{expect(distancePrice(flowers,5)).toBe(89);expect(distancePrice(flowers,10)).toBe(119);});
+ it('sells out only the Flores 10km distance',()=>{expect(isSoldOut(flowers,10)).toBe(true);expect(isSoldOut(flowers,5)).toBe(false);});
+ it('charges R$14.90 for same-city delivery',()=>{expect(deliveryFee('home','Mogi das Cruzes','SP',flowers)).toBe(14.9);});
+ it('charges R$24.90 for another city in the same state',()=>{expect(deliveryFee('home','São Paulo','SP',flowers)).toBe(24.9);});
+ it('charges R$34.90 for another state',()=>{expect(deliveryFee('home','Rio de Janeiro','RJ',flowers)).toBe(34.9);});
+ it('charges R$7.90 at a partner',()=>{expect(deliveryFee('partner','Mogi das Cruzes','SP',flowers)).toBe(7.9);});
+ it('does not charge for organizer pickup',()=>{expect(deliveryFee('organizer','Mogi das Cruzes','SP',flowers)).toBe(0);});
+ it('discounts registration only by 15% with PRIMEIRACORRIDA',()=>{expect(couponDiscount('PRIMEIRACORRIDA',89)).toBeCloseTo(13.35);});
+ it('discounts R$10 with CORREAKI10',()=>{expect(couponDiscount('CORREAKI10',89)).toBe(10);});
+ it('rejects other coupons',()=>{expect(couponDiscount('INVALIDO',89)).toBe(0);});
+ it('refunds 100% at seven days and 50% at six days',()=>{expect(refundRate('2026-11-29',new Date('2026-11-22T12:00:00'))).toBe(1);expect(refundRate('2026-11-29',new Date('2026-11-23T12:00:00'))).toBe(0.5);});
+ it('allows address changes only before dispatch for home delivery',()=>{expect(canChangeAddress(0,'home')).toBe(true);expect(canChangeAddress(1,'home')).toBe(true);expect(canChangeAddress(2,'home')).toBe(false);expect(canChangeAddress(0,'partner')).toBe(false);});
+ it('awards 100 per registration and 50 per completion',()=>{expect(earnedPoints(1,0)).toBe(100);expect(earnedPoints(0,1)).toBe(50);});
+ it('promises kit two days before race',()=>{expect(kitDeadline('2026-11-29')).toBe('27/11/2026');});
+});
